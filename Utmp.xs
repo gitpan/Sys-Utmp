@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <time.h>
+#include <string.h>
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -43,13 +44,20 @@
 
 static int ut_fd = -1;
 
+static char _ut_name[] = _PATH_UTMP;
+
+void utmpname(char *filename)
+{
+   strcpy(_ut_name, filename);
+}
+
 void setutent(void)
 {
     if (ut_fd < 0)
     {
-       if ((ut_fd = open(_PATH_UTMP, O_RDONLY)) < 0) 
+       if ((ut_fd = open(_ut_name, O_RDONLY)) < 0) 
        {
-            croak("Can't open %s",_PATH_UTMP);
+            croak("Can't open %s",_ut_name);
         }
     }
 
@@ -84,11 +92,11 @@ struct utmp *getutent(void)
         }
         else if (readval < 0) 
         {
-            croak("Error reading %s", _PATH_UTMP);
+            croak("Error reading %s", _ut_name);
         } 
         else 
         {
-            croak("Partial record in %s [%d bytes]", _PATH_UTMP, readval );
+            croak("Partial record in %s [%d bytes]", _ut_name, readval );
         }
     }
     return &s_utmp;
@@ -446,3 +454,14 @@ endutent(self)
 SV *self
    PPCODE:
     endutent();
+
+void
+utmpname(self, filename)
+SV *self
+SV *filename
+   PPCODE:
+     char *ff;
+
+     ff = SvPV_nolen(filename);
+     utmpname(ff);
+

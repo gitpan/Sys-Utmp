@@ -4,7 +4,7 @@ BEGIN { plan tests => 4 };
 use Sys::Utmp ':constants';
 ok(1); 
 
-my $utmp = Sys::Utmp->new();
+my $utmp = Sys::Utmp->new(Filename => '/var/run/utmp');
 
 ok(2);
 

@@ -15,6 +15,9 @@
 #*****************************************************************************
 #*                                                                           *
 #*      $Log: Utmp.pm,v $
+#*      Revision 1.3  2001/03/27 06:55:36  gellyfish
+#*      Added utmpname()
+#*
 #*      Revision 1.2  2001/02/12 15:05:31  gellyfish
 #*      Added BSD support
 #*
@@ -64,7 +67,9 @@ for your purposes.
 
 =item new
 
-The constructor of the class.
+The constructor of the class.  Arguments may be provided in Key => Value
+pairs : it currently takes one argument 'Filename' which will set the file
+which is to be used in place of that defined in _PATH_UTMP.
 
 =item getutent
 
@@ -80,6 +85,12 @@ done.
 =item endutent
 
 Closes the file handle on the utmp file.
+
+=item utmpname SCALAR filename
+
+Sets the file that will be used in place of that defined in _PATH_UTMP.
+It is not defined what will happen if this is done between two calls to
+getutent() - it is recommended that endutent() is called first.
 
 =back
 
@@ -203,11 +214,11 @@ my @constants = qw(
 
 @EXPORT = qw();
 
-($VERSION) = q$Revision: 1.2 $ =~ /([\d.]+)/;
+($VERSION) = q$Revision: 1.3 $ =~ /([\d.]+)/;
 
 sub new 
 {
-  my ( $proto, $args ) = @_;
+  my ( $proto, %args ) = @_;
 
   my $self = {};
 
@@ -215,6 +226,12 @@ sub new
 
   bless $self, $class;
 
+  if ( exists $args{Filename} and -s $args{Filename} )
+  {
+    $self->utmpname($args{Filename});
+  }
+  
+  return $self;
 }
 
 sub AUTOLOAD 
