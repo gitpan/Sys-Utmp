@@ -42,6 +42,23 @@
 #define ACCOUNTING      9
 #endif
 
+
+/*
+    It is almost certain that if these are not defined the fields they are
+    for are not present or this is BSD :)
+*/
+
+
+#ifndef UT_LINESIZE
+# define UT_LINESIZE 32
+#endif
+#ifndef UT_NAMESIZE
+# define UT_NAMESIZE 32
+#endif 
+#ifndef UT_HOSTSIZE
+# define UT_HOSTSIZE
+#endif
+
 static int ut_fd = -1;
 
 static char _ut_name[] = _PATH_UTMP;
@@ -352,6 +369,7 @@ MODULE = Sys::Utmp		PACKAGE = Sys::Utmp
 
 PROTOTYPES: DISABLE
 
+
 double
 constant(sv,arg)
     PREINIT:
@@ -371,17 +389,16 @@ void
 getutent(self)
 SV *self
    PPCODE:
-     AV *ut;
-     HV *meth_stash;
-     struct utmp *utent;
-     IV ut_tv;
-     char *_ut_id;
-     IV _ut_pid;
-     IV _ut_type; 
-     SV *ut_ref;
-     char *ut_host;
+     static AV *ut;
+     static HV *meth_stash;
+     static IV ut_tv;
+     static IV _ut_pid;
+     static IV _ut_type; 
+     static SV *ut_ref;
+     static char *_ut_id;
+     static struct utmp *utent;
+     static char ut_host[UT_HOSTSIZE];
      utent = getutent();
-     ut = newAV();
      if ( utent )
      {
 #ifdef _NO_UT_ID
@@ -405,24 +422,28 @@ SV *self
        ut_tv = (IV)utent->ut_time;
 #endif
 #ifdef _HAVE_UT_HOST
-       ut_host = utent->ut_host;
+       strcpy(ut_host, utent->ut_host);
 #else
-       ut_host = strdup("");
+       strcpy(ut_host, "");
 #endif
 
+       ENTER ;
+       SAVETMPS ;
+ 
        if ( GIMME_V == G_ARRAY )
        {
-         EXTEND(SP,7);
-         PUSHs(sv_2mortal(newSVpv(utent->ut_user,0)));
-         PUSHs(sv_2mortal(newSVpv(_ut_id,0)));
-         PUSHs(sv_2mortal(newSVpv(utent->ut_line,0)));
-         PUSHs(sv_2mortal(newSViv(_ut_pid)));
-         PUSHs(sv_2mortal(newSViv(_ut_type)));
-         PUSHs(sv_2mortal(newSVpv(ut_host,0)));
-         PUSHs(sv_2mortal(newSViv(ut_tv)));
+         XPUSHs(sv_2mortal(newSVpv(utent->ut_user,0)));
+         XPUSHs(sv_2mortal(newSVpv(_ut_id,0)));
+         XPUSHs(sv_2mortal(newSVpv(utent->ut_line,0)));
+         XPUSHs(sv_2mortal(newSViv(_ut_pid)));
+         XPUSHs(sv_2mortal(newSViv(_ut_type)));
+         XPUSHs(sv_2mortal(newSVpv(ut_host,0)));
+         XPUSHs(sv_2mortal(newSViv(ut_tv)));
+
        }
-       else
+       else if ( GIMME_V == G_SCALAR )
        {
+         ut = newAV();
          av_push(ut,newSVpv(utent->ut_user,0));
          av_push(ut,newSVpv(_ut_id,0));
          av_push(ut,newSVpv(utent->ut_line,0));
@@ -430,17 +451,23 @@ SV *self
          av_push(ut,newSViv(_ut_type));
          av_push(ut,newSVpv(ut_host,0));
          av_push(ut,newSViv(ut_tv));
-         EXTEND(SP,1);
          meth_stash = gv_stashpv("Sys::Utmp::Utent",1);
-         ut_ref = newRV((SV *)ut);
+         ut_ref = newRV_noinc((SV *)ut);
          sv_bless(ut_ref, meth_stash);
-         PUSHs(sv_2mortal(ut_ref));
+         XPUSHs(sv_2mortal(ut_ref));
+       }
+       else
+       {
+          XSRETURN_EMPTY;
        }
      }
      else
      {
         XSRETURN_EMPTY;
      }
+
+     FREETMPS ;
+     LEAVE ;
 
 
 void
@@ -465,3 +492,8 @@ SV *filename
      ff = SvPV_nolen(filename);
      utmpname(ff);
 
+void
+DESTROY(self)
+SV *self
+   PPCODE:
+     endutent();

@@ -15,6 +15,9 @@
 #*****************************************************************************
 #*                                                                           *
 #*      $Log: Utmp.pm,v $
+#*      Revision 1.4  2001/09/10 07:16:10  gellyfish
+#*      Fixed memory leakage in getutent()
+#*
 #*      Revision 1.3  2001/03/27 06:55:36  gellyfish
 #*      Added utmpname()
 #*
@@ -214,7 +217,7 @@ my @constants = qw(
 
 @EXPORT = qw();
 
-($VERSION) = q$Revision: 1.3 $ =~ /([\d.]+)/;
+($VERSION) = q$Revision: 1.4 $ =~ /([\d.]+)/;
 
 sub new 
 {
@@ -239,6 +242,8 @@ sub AUTOLOAD
     my ( $self ) = @_;
 
     my $constname;
+    return if $AUTOLOAD =~ /DESTROY/;
+
     ($constname = $AUTOLOAD) =~ s/.*:://;
     croak "& not defined" if $constname eq 'constant';
     my $val = constant($constname, @_ ? $_[0] : 0);
@@ -253,12 +258,6 @@ sub AUTOLOAD
     goto &$AUTOLOAD;
 }
 
-sub DESTROY
-{
-  my ( $self ) = @_;
-
-  $self->endutent()
-}
 
 1;
 
