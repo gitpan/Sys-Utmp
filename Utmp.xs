@@ -4,6 +4,97 @@
 
 #include <utmp.h>
 
+#ifdef NOUTFUNCS
+
+#include <stdlib.h>
+#include <unistd.h>
+#include <time.h>
+#include <stdio.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+
+#ifdef BSD
+#define _NO_UT_ID
+#define _NO_UT_TYPE
+#define _NO_UT_PID
+#define ut_user ut_name
+#endif
+
+/*
+   define these so it still works as documented :)
+*/
+
+#ifndef USER_PROCESS
+#define EMPTY           0       /* No valid user accounting information.  */
+
+#define RUN_LVL         1       /* The system's runlevel.  */
+#define BOOT_TIME       2       /* Time of system boot.  */
+#define NEW_TIME        3       /* Time after system clock changed.  */
+#define OLD_TIME        4       /* Time when system clock changed.  */
+
+#define INIT_PROCESS    5       /* Process spawned by the init process.  */
+#define LOGIN_PROCESS   6       /* Session leader of a logged in user.  */
+#define USER_PROCESS    7       /* Normal process.  */
+#define DEAD_PROCESS    8       /* Terminated process.  */
+
+#define ACCOUNTING      9
+#endif
+
+static int ut_fd = -1;
+
+void setutent(void)
+{
+    if (ut_fd < 0)
+    {
+       if ((ut_fd = open(_PATH_UTMP, O_RDONLY)) < 0) 
+       {
+            croak("Can't open %s",_PATH_UTMP);
+        }
+    }
+
+    lseek(ut_fd, (off_t) 0, SEEK_SET);
+}
+
+void endutent(void)
+{
+    if (ut_fd > 0)
+    {
+        close(ut_fd);
+    }
+
+    ut_fd = -1;
+}
+
+struct utmp *getutent(void) 
+{
+    static struct utmp s_utmp;
+    int readval;
+
+    if (ut_fd < 0)
+    {
+        setutent();
+    }
+
+    if ((readval = read(ut_fd, &s_utmp, sizeof(s_utmp))) < sizeof(s_utmp))
+    {
+        if (readval == 0)
+        {
+            return NULL;
+        }
+        else if (readval < 0) 
+        {
+            croak("Error reading %s", _PATH_UTMP);
+        } 
+        else 
+        {
+            croak("Partial record in %s [%d bytes]", _PATH_UTMP, readval );
+        }
+    }
+    return &s_utmp;
+}
+
+#endif
 
 static int
 not_here(char *s)
@@ -276,12 +367,30 @@ SV *self
      HV *meth_stash;
      struct utmp *utent;
      IV ut_tv;
+     char *_ut_id;
+     IV _ut_pid;
+     IV _ut_type; 
      SV *ut_ref;
      char *ut_host;
      utent = getutent();
      ut = newAV();
      if ( utent )
      {
+#ifdef _NO_UT_ID
+       _ut_id = "";
+#else
+       _ut_id = utent->ut_id;
+#endif
+#ifdef _NO_UT_TYPE
+       _ut_type = 7;
+#else
+       _ut_type = utent->ut_type;
+#endif
+#ifdef _NO_UT_PID
+       _ut_pid = -1; 
+#else
+       _ut_pid = utent->ut_pid;
+#endif
 #ifdef _HAVE_UT_TV
        ut_tv = (IV)utent->ut_tv.tv_sec;
 #else
@@ -297,20 +406,20 @@ SV *self
        {
          EXTEND(SP,7);
          PUSHs(sv_2mortal(newSVpv(utent->ut_user,0)));
-         PUSHs(sv_2mortal(newSVpv(utent->ut_id,0)));
+         PUSHs(sv_2mortal(newSVpv(_ut_id,0)));
          PUSHs(sv_2mortal(newSVpv(utent->ut_line,0)));
-         PUSHs(sv_2mortal(newSViv((IV)utent->ut_pid)));
-         PUSHs(sv_2mortal(newSViv((IV)utent->ut_type)));
+         PUSHs(sv_2mortal(newSViv(_ut_pid)));
+         PUSHs(sv_2mortal(newSViv(_ut_type)));
          PUSHs(sv_2mortal(newSVpv(ut_host,0)));
          PUSHs(sv_2mortal(newSViv(ut_tv)));
        }
        else
        {
          av_push(ut,newSVpv(utent->ut_user,0));
-         av_push(ut,newSVpv(utent->ut_id,0));
+         av_push(ut,newSVpv(_ut_id,0));
          av_push(ut,newSVpv(utent->ut_line,0));
-         av_push(ut,newSViv((IV)utent->ut_pid));
-         av_push(ut,newSViv((IV)utent->ut_type));
+         av_push(ut,newSViv(_ut_pid));
+         av_push(ut,newSViv(_ut_type));
          av_push(ut,newSVpv(ut_host,0));
          av_push(ut,newSViv(ut_tv));
          EXTEND(SP,1);

@@ -20,9 +20,12 @@ LIBS directive to Makefile.PL to include the appropriate library:
 
 for example.
 
-The module will not build on systems (such as BSD) that do not have these 
-functions (although the author could be persuaded to provide support for
-these if there is demand.)
+If your system doesnt have these functions and Makefile.PL doesnt detect
+that it should try to supply them itself then you might try :
+
+   perl Makefile.PL DEFINE='-DNOUTFUNCS'
+
+which will force the module to use its built in versions of the functions.
 
 COPYRIGHT AND LICENCE
 

@@ -1,4 +1,28 @@
 use ExtUtils::MakeMaker;
+
+my (
+    $define,
+    $libs
+   );
+
+if ( $^O =~ /bsd/i )
+{
+   $define = '-DNOUTFUNCS';
+}
+else
+{
+   $define = '';
+}
+
+if ( $^O eq 'sco' )
+{
+  $libs = ['-lc'];
+}
+else
+{
+  $libs = [''];
+}
+
 WriteMakefile(
     'NAME'		=> 'Sys::Utmp',
     'VERSION_FROM'	=> 'Utmp.pm',
@@ -7,6 +31,6 @@ WriteMakefile(
       (ABSTRACT_FROM => 'Utmp.pm',
        AUTHOR     => 'Jonathan Stowe <jonathan.stowe@netscalibur.co.uk>') : ()),
     'LIBS'		=> ['-lc'],
-    'DEFINE'		=> '',
+    'DEFINE'		=> $define,
     'INC'		=> '' 
 );

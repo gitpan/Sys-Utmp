@@ -15,6 +15,9 @@
 #*****************************************************************************
 #*                                                                           *
 #*      $Log: Utmp.pm,v $
+#*      Revision 1.2  2001/02/12 15:05:31  gellyfish
+#*      Added BSD support
+#*
 #*      Revision 1.1  2001/02/09 22:27:30  gellyfish
 #*      Initial revision
 #*
@@ -47,8 +50,9 @@ Sys::Utmp - Object(ish) Interface to UTMP files.
 =head1 DESCRIPTION
 
 Sys::Utmp provides a vaguely object oriented interface to the Unix user
-accounting file ( usually /etc/utmp ). Currently it only supports systems
-that provide the getutent library function (which excludes BSD ).
+accounting file ( usually /etc/utmp ).  Whilst it would prefer to use the
+getutent() function from the systems C libraries it will attempt to
+provide its own if they are missing.
  
 This may not be the module that you are looking for - there is a User::Utmp
 which provides a different procedural interface and may well be more complete
@@ -199,7 +203,7 @@ my @constants = qw(
 
 @EXPORT = qw();
 
-($VERSION) = q$Revision: 1.1 $ =~ /([\d.]+)/;
+($VERSION) = q$Revision: 1.2 $ =~ /([\d.]+)/;
 
 sub new 
 {
@@ -329,8 +333,8 @@ These constants are exportable under the tag ':constants':
 
 =item BUGS
 
-Probably.  This module has been tested on Linux, Solaris and SCO Openserver
-and found to work on those platforms.  It doesnt work on BSD at the moment.
+Probably.  This module has been tested on Linux, Solaris, FreeBSD ,SCO 
+Openserver and SCO UnixWare and found to work on those platforms.  
 If you have difficulty building the module or it doesnt behave as expected
 then please contact the author including if appropriate your /usr/include/utmp.h
 
