@@ -1,41 +1,69 @@
-
 use Test;
-BEGIN { plan tests => 4 };
-use Sys::Utmp ':constants';
+BEGIN { plan tests => 7 };
+use Sys::Utmp ;
 ok(1); 
 
-my $utmp = Sys::Utmp->new(Filename => '/var/run/utmp');
+# test 
 
-ok(2);
-
-eval 
 {
-   while( my $utent = $utmp->getutent() )
+   my $utmp = Sys::Utmp->new(Filename => '/var/run/utmp');
+
+   ok(2);
+
+   eval 
    {
-      my $t = $utent->ut_line();
-      $t    = $utent->user_process();
-    }
-};
-if ( $@ )
-{
-  ok(0);
-}
-else
-{
-  ok(3);
-}
+      while( my $utent = $utmp->getutent() )
+      {
+         my $t = $utent->ut_line();
+         $t    = $utent->user_process();
+       }
+       ok(3);
+   };
+   if ( $@ )
+   {
+     ok(0);
+   }
  
-eval
-{
-  $utmp->setutent();
-};
-if ($@)
-{
-  ok(0);
-}
-else
-{
-  ok(4);
+   eval
+   {
+     $utmp->setutent();
+     ok(4);
+   };
+   if ($@)
+   {
+     ok(0);
+   }
+
 }
 
 
+{
+   my $utmp = Sys::Utmp->new(Filename => '/var/run/utmp');
+
+   ok(5);
+
+   eval 
+   {
+      while( my @utent = $utmp->getutent() )
+      {
+         my $t = $utent[UT_USER];
+         $t    = $utent[UT_ID];
+       }
+       ok(6);
+   };
+   if ( $@ )
+   {
+     ok(0);
+   }
+ 
+   eval
+   {
+     $utmp->setutent();
+     ok(7);
+   };
+   if ($@)
+   {
+     ok(0);
+   }
+
+}

@@ -11,3 +11,9 @@ Revision history for Perl extension Sys::Utmp.
         - Fixed atrocious memory leak as reported by
           Stuart Sharpe <stu@drazi.demon.co.uk>
 
+1.5  Fri Sep 14 08:21:38 BST 2001
+        - Having fixed the memory leak had introduced a coredump in
+          PL_sv_free :(
+        - Tainted ut_host as DNS might not be in our control.
+        - utmpname() was not backward compatible to 5.005
+        - added eg/pwho

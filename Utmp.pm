@@ -15,6 +15,11 @@
 #*****************************************************************************
 #*                                                                           *
 #*      $Log: Utmp.pm,v $
+#*      Revision 1.5  2001/09/14 07:28:51  gellyfish
+#*      * Fixed coredump in PL_sv_free
+#*      * Tainted ut_host
+#*      * fixed backward compatibillity problem
+#*
 #*      Revision 1.4  2001/09/10 07:16:10  gellyfish
 #*      Fixed memory leakage in getutent()
 #*
@@ -169,7 +174,10 @@ type.
 
 On systems which support this the method will return the hostname of the 
 host for which the process that created the record was started - for example
-for a telnet login.
+for a telnet login.  If taint checking has been turned on (with the -T
+switch to perl )  then this value will be tainted as it is possible that
+a remote user will be in control of the DNS for the machine they have
+logged in from. ( see L<perlsec> for more on tainting )
 
 =item ut_time
 
@@ -217,7 +225,7 @@ my @constants = qw(
 
 @EXPORT = qw();
 
-($VERSION) = q$Revision: 1.4 $ =~ /([\d.]+)/;
+($VERSION) = q$Revision: 1.5 $ =~ /([\d.]+)/;
 
 sub new 
 {
@@ -236,6 +244,7 @@ sub new
   
   return $self;
 }
+
 
 sub AUTOLOAD 
 {

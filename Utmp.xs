@@ -398,7 +398,17 @@ SV *self
      static char *_ut_id;
      static struct utmp *utent;
      static char ut_host[UT_HOSTSIZE];
+
+     SV *sv_ut_user;
+     SV *sv_ut_id;
+     SV *sv_ut_line;
+     SV *sv_ut_pid;
+     SV *sv_ut_type;
+     SV *sv_ut_host;
+     SV *sv_ut_tv;
+
      utent = getutent();
+
      if ( utent )
      {
 #ifdef _NO_UT_ID
@@ -427,30 +437,48 @@ SV *self
        strcpy(ut_host, "");
 #endif
 
-       ENTER ;
-       SAVETMPS ;
- 
+
+       sv_ut_user = newSVpv(utent->ut_user,0);
+       sv_ut_id   = newSVpv(_ut_id,0);
+       sv_ut_line = newSVpv(utent->ut_line,0);
+       sv_ut_pid  = newSViv(_ut_pid);
+       sv_ut_type = newSViv(_ut_type);
+       sv_ut_host = newSVpv(ut_host,0);
+       sv_ut_tv   = newSViv(ut_tv);
+
+
+       SvTAINT(sv_ut_host);
+
        if ( GIMME_V == G_ARRAY )
        {
-         XPUSHs(sv_2mortal(newSVpv(utent->ut_user,0)));
-         XPUSHs(sv_2mortal(newSVpv(_ut_id,0)));
-         XPUSHs(sv_2mortal(newSVpv(utent->ut_line,0)));
-         XPUSHs(sv_2mortal(newSViv(_ut_pid)));
-         XPUSHs(sv_2mortal(newSViv(_ut_type)));
-         XPUSHs(sv_2mortal(newSVpv(ut_host,0)));
-         XPUSHs(sv_2mortal(newSViv(ut_tv)));
+         sv_ut_user = sv_2mortal(sv_ut_user);
+         sv_ut_id   = sv_2mortal(sv_ut_id);
+         sv_ut_line = sv_2mortal(sv_ut_line);
+         sv_ut_pid  = sv_2mortal(sv_ut_pid);
+         sv_ut_type = sv_2mortal(sv_ut_type);
+         sv_ut_host = sv_2mortal(sv_ut_host);
+         sv_ut_tv   = sv_2mortal(sv_ut_tv);
+
+         XPUSHs(sv_ut_user);
+         XPUSHs(sv_ut_id);
+         XPUSHs(sv_ut_line);
+         XPUSHs(sv_ut_pid);
+         XPUSHs(sv_ut_type);
+         XPUSHs(sv_ut_host);
+         XPUSHs(sv_ut_tv);
 
        }
        else if ( GIMME_V == G_SCALAR )
        {
          ut = newAV();
-         av_push(ut,newSVpv(utent->ut_user,0));
-         av_push(ut,newSVpv(_ut_id,0));
-         av_push(ut,newSVpv(utent->ut_line,0));
-         av_push(ut,newSViv(_ut_pid));
-         av_push(ut,newSViv(_ut_type));
-         av_push(ut,newSVpv(ut_host,0));
-         av_push(ut,newSViv(ut_tv));
+         av_push(ut,sv_ut_user);
+         av_push(ut,sv_ut_id);
+         av_push(ut,sv_ut_line);
+         av_push(ut,sv_ut_pid);
+         av_push(ut,sv_ut_type);
+         av_push(ut,sv_ut_host);
+         av_push(ut,sv_ut_tv);
+
          meth_stash = gv_stashpv("Sys::Utmp::Utent",1);
          ut_ref = newRV_noinc((SV *)ut);
          sv_bless(ut_ref, meth_stash);
@@ -466,8 +494,6 @@ SV *self
         XSRETURN_EMPTY;
      }
 
-     FREETMPS ;
-     LEAVE ;
 
 
 void
@@ -489,7 +515,7 @@ SV *filename
    PPCODE:
      char *ff;
 
-     ff = SvPV_nolen(filename);
+     ff = SvPV(filename,PL_na);
      utmpname(ff);
 
 void
