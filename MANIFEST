@@ -16,3 +16,4 @@ t/05fields.t
 t/06taint.t
 t/07utent_methods.t
 t/08utent_types.t
+META.json                                Module JSON meta-data (added by MakeMaker)

@@ -4,8 +4,11 @@
 
 #include <utmp.h>
 
-#ifdef NOUTFUNCS
+#ifdef _AIX
+#define _HAVE_UT_HOST	1
+#endif
 
+#ifdef NOUTFUNCS
 #include <stdlib.h>
 #include <unistd.h>
 #include <time.h>
@@ -15,10 +18,12 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
+
 #ifdef BSD
 #define _NO_UT_ID
 #define _NO_UT_TYPE
 #define _NO_UT_PID
+#define _HAVE_UT_HOST
 #define ut_user ut_name
 #endif
 
@@ -42,22 +47,11 @@
 #define ACCOUNTING      9
 #endif
 
-
 /*
     It is almost certain that if these are not defined the fields they are
     for are not present or this is BSD :)
 */
 
-
-#ifndef UT_LINESIZE
-# define UT_LINESIZE 32
-#endif
-#ifndef UT_NAMESIZE
-# define UT_NAMESIZE 32
-#endif 
-#ifndef UT_HOSTSIZE
-# define UT_HOSTSIZE
-#endif
 
 static int ut_fd = -1;
 
@@ -207,9 +201,8 @@ SV *self
      static SV *ut_ref;
      static char *_ut_id;
      static struct utmp *utent;
-     static char ut_host[UT_HOSTSIZE];
+     static char ut_host[sizeof(utent->ut_host)];
 
-     HV *self_hash;
 
      SV *sv_ut_user;
      SV *sv_ut_id;
@@ -222,7 +215,6 @@ SV *self
      if(!SvROK(self)) 
         croak("Must be called as an object method");
 
-     self_hash = (HV *)SvRV(self);
 
      utent = getutent();
 
@@ -249,9 +241,9 @@ SV *self
        ut_tv = (IV)utent->ut_time;
 #endif
 #ifdef _HAVE_UT_HOST
-       strncpy(ut_host, utent->ut_host,UT_HOSTSIZE);
+       strncpy(ut_host, utent->ut_host,sizeof(utent->ut_host));
 #else
-       strcpy(ut_host, "",1);
+       strncpy(ut_host, "",1);
 #endif
 
 
@@ -318,23 +310,19 @@ void
 setutent(self)
 SV *self
    PPCODE:
-    HV *self_hash;
 
     if(!SvROK(self)) 
         croak("Must be called as an object method");
 
-    self_hash = (HV *)SvRV(self);
     setutent();
 
 void
 endutent(self)
 SV *self
    PPCODE:
-    HV *self_hash;
 
     if(!SvROK(self)) 
         croak("Must be called as an object method");
-    self_hash = (HV *)SvRV(self);
     endutent();
 
 void
@@ -343,11 +331,9 @@ SV *self
 SV *filename
    PPCODE:
      char *ff;
-     HV *self_hash;
 
     if(!SvROK(self)) 
         croak("Must be called as an object method");
-     self_hash = (HV *)SvRV(self);
 
      ff = SvPV(filename,PL_na);
      utmpname(ff);
@@ -356,10 +342,8 @@ void
 DESTROY(self)
 SV *self
    PPCODE:
-     HV *self_hash;
 
     if(!SvROK(self)) 
         croak("Must be called as an object method");
 
-     self_hash = (HV *)SvRV(self);
      endutent();
